@@ -1,9 +1,9 @@
 {
     "id": "target-word-count",
     "name": "Target Word Count",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "minAppVersion": "0.12.0",
-    "description": "Disable editing until you've added a target number of words to Obsidian.",
+    "description": "Disable editing until you've added a target number of words.",
     "author": "TwoFive Labs",
     "isDesktopOnly": false,
     "dir": "target-word-count"
