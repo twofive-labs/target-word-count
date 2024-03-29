@@ -24,7 +24,7 @@ class SetTargetWordCountModal extends Modal {
         let {contentEl} = this;
         let targetWordCountInput: HTMLInputElement;
 
-        contentEl.createEl('h2', {text: 'Set Target Word Count'});
+        contentEl.createEl('h2', {text: 'Set target word count'});
 
         new Setting(contentEl)
             .setName('Target Word Count')
@@ -68,7 +68,7 @@ export default class TargetWordCountPlugin extends Plugin {
     onload() {
         this.addCommand({
             id: 'enable-target-word-count',
-            name: 'Set New',
+            name: 'Set new',
             callback: () => {
                 new SetTargetWordCountModal(this.app, this).open();
             },
@@ -190,7 +190,7 @@ export default class TargetWordCountPlugin extends Plugin {
         if (this.targetWordCount === 0) {
             this.statusBarItem.setText('');
         } else if (this.targetReachedOnce) {
-            this.statusBarItem.setText(`Target reached. Edit freely.`);
+            this.statusBarItem.setText(`Target word count reached. Edit freely.`);
         } else {
             this.statusBarItem.setText(`New Words: ${this.currentWordCount}/${this.targetWordCount}`);
         }
