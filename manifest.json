@@ -1,9 +1,9 @@
 {
     "id": "target-word-count",
     "name": "Target Word Count",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "minAppVersion": "0.12.0",
-    "description": "Enforce a target word count before allowing edits in your Obsidian notes.",
+    "description": "Disable editing until you've added a target number of words to Obsidian.",
     "author": "TwoFive Labs",
     "isDesktopOnly": false,
     "dir": "target-word-count"
