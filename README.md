@@ -1,11 +1,14 @@
 # Target Word Count
 
-The Target Word Count plugin for Obsidian disables editing until you've added the target number of new words to the document.
+The Target Word Count plugin for Obsidian disables editing until you've added a target number of new words.
 
 ## Usage
 
-- **To set a target word count**, use the command palette (`Ctrl/Cmd + P`) and search for "Enable Target Word Count Mode." Follow the prompts to input your target. Editing will be disabled until you add this many new words to the document.
-- **To reset your target word count progress**, use the command palette again and search for "Reset Target Word Count Progress."
+Using the command palette (`Ctrl/Cmd + P`):
+
+- **Target Word Count: Set New** initiates tracking. Once a target word count is set, you cannot delete content until you have added your targeted number of new words to Obsidian. Progress and editing restrictions are shared across all documents.
+- **Target Word Count: Reset** will reset your progress to 0. Your target word count setting will remain.
+- **Target Word Count: Stop** will halt all plugin functionality and allow editing. To start again, use **Target Word Count: Set New** listed above.
 
 ## About
 

@@ -1,25 +1,69 @@
-import { Plugin, Modal, Setting, Notice } from 'obsidian';
+import { Plugin, Modal, Setting, App, Notice, MarkdownView, Editor } from 'obsidian';
+
+
+interface PluginState {
+    lastValidContent: string;
+    currentWordCount: number;
+    targetWordCount: number;
+    targetReachedOnce: boolean;
+    prevNewWords: number;
+    baselineWordCount: number;
+    pluginActive: boolean;
+}
+
 
 class SetTargetWordCountModal extends Modal {
     plugin: TargetWordCountPlugin;
-    constructor(plugin: TargetWordCountPlugin) {
-        super(plugin.app);
+
+    constructor(app: App, plugin: TargetWordCountPlugin) {
+        super(app);
         this.plugin = plugin;
+        this.pluginActive = false;
     }
+
     onOpen() {
         let {contentEl} = this;
+        let targetWordCountInput: HTMLInputElement;
+
+        contentEl.createEl('h2', {text: 'Set Target Word Count'});
+
         new Setting(contentEl)
-            .setName('Set Target Word Count')
-            .addText(text => text
-                .onChange(async (value) => {
-                    let num = parseInt(value);
-                    if (!isNaN(num)) {
-                        this.plugin.setTargetWordCount(num);
-                        new Notice(`Target word count set to ${num}`);
-                        this.close();
-                    }
-                }));
+            .setName('Target Word Count')
+            .addText(text => {
+                text.setPlaceholder('Enter target word count...')
+                targetWordCountInput = text.inputEl;
+            });
+
+        new Setting(contentEl)
+            .addButton(btn => {
+                btn.setButtonText('Set')
+                    .onClick(() => {
+                        const value = parseInt(targetWordCountInput.value);
+                        if (!isNaN(value) && value > 0) {
+                            this.plugin.setTargetWordCount(value);
+                            new Notice(`Target word count set to ${value}`);
+                            this.close();
+                        } else {
+                            new Notice('Please enter a valid number.');
+                        }
+                    });
+            });
+
+        targetWordCountInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = parseInt(targetWordCountInput.value);
+                if (!isNaN(value) && value > 0) {
+                    this.plugin.setTargetWordCount(value);
+                    new Notice(`Target word count set to ${value}`);
+                    this.close();
+                } else {
+                    new Notice('Please enter a valid number.');
+                }
+            }
+        });
     }
+
     onClose() {
         let {contentEl} = this;
         contentEl.empty();
@@ -27,70 +71,142 @@ class SetTargetWordCountModal extends Modal {
 }
 
 export default class TargetWordCountPlugin extends Plugin {
-    targetWordCount: number = 0;
-    baseWordCount: number = 0;
-    targetReachedOnce: boolean = false;
+    lastValidContent = "";
+    currentWordCount = 0;
+    targetWordCount = 0;
+    targetReachedOnce = false;
+    prevNewWords = 0;
+    baselineWordCount = 0;
     statusBarItem: HTMLElement;
 
     onload() {
         this.addCommand({
             id: 'enable-target-word-count',
-            name: 'Enable Target Word Count Mode',
+            name: 'Set New',
             callback: () => {
-                new SetTargetWordCountModal(this).open();
+                new SetTargetWordCountModal(this.app, this).open();
             },
         });
 
         this.addCommand({
             id: 'reset-target-word-count-progress',
-            name: 'Reset Target Word Count Progress',
+            name: 'Reset',
             callback: () => {
                 this.resetProgress();
             },
         });
 
+        this.addCommand({
+            id: 'disable-target-word-count',
+            name: 'Stop',
+            callback: () => {
+                this.disablePlugin();
+            },
+        });
+
         this.statusBarItem = this.addStatusBarItem();
         this.updateStatusBar();
-        
-        this.registerEvent(
-            this.app.workspace.on('editor-change', (editor) => {
-                this.updateWordCount(editor.getValue());
-            })
-        );
+
+        this.registerEvent(this.app.workspace.on('editor-change', this.handleEditorChange.bind(this)));
+        this.registerEvent(this.app.workspace.on("active-leaf-change", this.handleActiveLeafChange.bind(this)));
     }
 
     setTargetWordCount(num: number) {
         this.targetWordCount = num;
+        // Activate the plugin by registering event listeners if not already active
+        if (!this.pluginActive) {
+            this.registerEventListeners();
+        }
         this.resetProgress();
+    }
+
+    disablePlugin() {
+        // Remove event listeners to make the plugin dormant
+        this.app.workspace.off('editor-change', this.handleEditorChange.bind(this));
+        this.app.workspace.off('active-leaf-change', this.handleActiveLeafChange.bind(this));
+        this.pluginActive = false;
+        this.targetWordCount = 0; // Optional: Reset target word count on disable
+        this.updateStatusBar();
+    }
+    
+    registerEventListeners() {
+        this.registerEvent(this.app.workspace.on('editor-change', this.handleEditorChange.bind(this)));
+        this.registerEvent(this.app.workspace.on('active-leaf-change', this.handleActiveLeafChange.bind(this)));
+        this.pluginActive = true;
     }
 
     resetProgress() {
         this.targetReachedOnce = false;
-        this.baseWordCount = this.getCurrentWordCount();
+        const editor = this.getCurrentEditor();
+        if (editor) {
+            this.lastValidContent = editor.getValue();
+            // Set baseline word count when the target mode is activated or reset
+            const baselineWordCount = this.getWordCount(this.lastValidContent);
+            this.currentWordCount = 0; // Reset current new word count
+            // Store the baseline word count for comparison
+            this.baselineWordCount = baselineWordCount;
+        }
         this.updateStatusBar();
     }
 
-    updateWordCount(currentText: string) {
-        if (!this.targetReachedOnce) {
-            let currentWordCount = currentText.split(/\s+/).filter(Boolean).length - this.baseWordCount;
-            if (currentWordCount >= this.targetWordCount) {
-                this.targetReachedOnce = true;
-                new Notice('Target word count achieved!');
+    handleEditorChange(instance, change) {
+        const editor = this.getCurrentEditor();
+        if (editor) {
+            const content = editor.getValue();
+            const currentCharCount = content.length;
+            const totalWordCount = this.getWordCount(content);
+            const newWordCount = totalWordCount - this.baselineWordCount + this.prevNewWords; // Calculate new words added
+    
+            // Use character count to determine if we should revert changes
+            if (currentCharCount < this.lastValidContent.length && !this.targetReachedOnce && this.pluginActive) {
+                editor.setValue(this.lastValidContent);
+                new Notice('Target Word Count Plugin: Cannot delete characters until the target word count is reached. Use command Target Word Count: Stop to re-enable editing.');
+            } else {
+                this.lastValidContent = content;
+                // Update only if new words have been added
+                if (newWordCount >= 0) {
+                    this.currentWordCount = newWordCount;
+                }
+    
+                if (this.currentWordCount >= this.targetWordCount && !this.targetReachedOnce) {
+                    this.targetReachedOnce = true;
+                }
+                this.updateStatusBar();
             }
-            this.updateStatusBar(currentWordCount);
         }
     }
 
-    getCurrentWordCount(): number {
-        let editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
-        return editor ? editor.getValue().split(/\s+/).filter(Boolean).length : 0;
+    handleActiveLeafChange() {
+        // Obtain the current editor for the newly focused document
+        const editor = this.getCurrentEditor();
+        if (editor) {
+            const currentContent = editor.getValue();
+            this.prevNewWords = this.currentWordCount;
+            this.baselineWordCount = this.getWordCount(currentContent);
+            this.lastValidContent = currentContent;
+            this.updateStatusBar();
+        }
+    }
+    
+    
+    
+
+    getCurrentEditor() {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        return activeView ? activeView.editor : null;
     }
 
-    updateStatusBar(currentWordCount: number = 0) {
-        if (this.targetReachedOnce) {
+    getWordCount(text) {
+        return text.split(/\s+/).filter(Boolean).length;
+    }
+
+    updateStatusBar() {
+        if (this.targetWordCount === 0) {
+            this.statusBarItem.setText('');
+        } else if (this.targetReachedOnce) {
             this.statusBarItem.setText(`Target reached. Edit freely.`);
         } else {
-            this.statusBarItem.setText(`New words: ${currentWordCount}/${this.targetWordCount}`);
+            this.statusBarItem.setText(`New Words: ${this.currentWordCount}/${this.targetWordCount}`);
         }
     }
 
