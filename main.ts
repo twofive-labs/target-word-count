@@ -18,7 +18,6 @@ class SetTargetWordCountModal extends Modal {
     constructor(app: App, plugin: TargetWordCountPlugin) {
         super(app);
         this.plugin = plugin;
-        this.pluginActive = false;
     }
 
     onOpen() {
@@ -48,20 +47,6 @@ class SetTargetWordCountModal extends Modal {
                         }
                     });
             });
-
-        targetWordCountInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const value = parseInt(targetWordCountInput.value);
-                if (!isNaN(value) && value > 0) {
-                    this.plugin.setTargetWordCount(value);
-                    new Notice(`Target word count set to ${value}`);
-                    this.close();
-                } else {
-                    new Notice('Please enter a valid number.');
-                }
-            }
-        });
     }
 
     onClose() {
@@ -77,6 +62,7 @@ export default class TargetWordCountPlugin extends Plugin {
     targetReachedOnce = false;
     prevNewWords = 0;
     baselineWordCount = 0;
+    pluginActive = false;
     statusBarItem: HTMLElement;
 
     onload() {
@@ -149,7 +135,7 @@ export default class TargetWordCountPlugin extends Plugin {
         this.updateStatusBar();
     }
 
-    handleEditorChange(instance, change) {
+    handleEditorChange(instance: any, change: any) {
         const editor = this.getCurrentEditor();
         if (editor) {
             const content = editor.getValue();
@@ -196,7 +182,7 @@ export default class TargetWordCountPlugin extends Plugin {
         return activeView ? activeView.editor : null;
     }
 
-    getWordCount(text) {
+    getWordCount(text: any) {
         return text.split(/\s+/).filter(Boolean).length;
     }
 
