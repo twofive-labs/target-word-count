@@ -2,9 +2,8 @@
     "id": "target-word-count",
     "name": "Target Word Count",
     "version": "1.0.7",
-    "minAppVersion": "0.12.0",
+    "minAppVersion": "1.5.12",
     "description": "Disable editing until you've added a target number of words.",
     "author": "TwoFive Labs",
-    "isDesktopOnly": false,
-    "dir": "target-word-count"
+    "isDesktopOnly": false
 }
