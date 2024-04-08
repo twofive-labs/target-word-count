@@ -27,7 +27,7 @@ class SetTargetWordCountModal extends Modal {
         contentEl.createEl('h2', {text: 'Set target word count'});
 
         new Setting(contentEl)
-            .setName('Target Word Count')
+            .setName('Target word count')
             .addText(text => {
                 text.setPlaceholder('Enter target word count...')
                 targetWordCountInput = text.inputEl;
@@ -178,7 +178,7 @@ export default class TargetWordCountPlugin extends Plugin {
     
 
     getCurrentEditor() {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        const activeView = this.app.workspace.activeEditor;
         return activeView ? activeView.editor : null;
     }
 
