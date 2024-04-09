@@ -13,3 +13,7 @@ Using the command palette (`Ctrl/Cmd + P`):
 ## About
 
 Developed by TwoFive Labs. Find us on X: https://x.com/TwoFiveLabs
+
+If you find this free plugin useful, please consider supporting our development efforts here:
+
+<a href="https://www.buymeacoffee.com/twofivelabs" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
